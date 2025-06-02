@@ -1,0 +1,1 @@
+# Volatility-Analysis-of-Financial-Indices-Using-the-DCC-GARCH-Model
