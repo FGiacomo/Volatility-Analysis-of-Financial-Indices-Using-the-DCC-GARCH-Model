@@ -129,7 +129,7 @@ acf(DAX_df$log_return^2, main = "DAX Squared Returns ACF")
 acf(NIKKEI_df$log_return^2, main = "Nikkei 225 Squared Returns ACF")
 
 # Perform ARCH LM test
-install.packages("FinTS")
+#install.packages("FinTS")
 library(FinTS)
 
 arch_lm_test <- function(x, name) {
@@ -144,7 +144,7 @@ arch_lm_test(NIKKEI_df$log_return, "Nikkei 225")
 
 
 ## FIT GARCH(1,1) model
-install.packages("rugarch")  # Only if not already installed
+#install.packages("rugarch")  # Only if not already installed
 library(rugarch)
 spec <- ugarchspec(
   variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
@@ -390,120 +390,3 @@ calcola_VaR(fit_SP500, "S&P 500", alpha = 0.05)
 calcola_VaR(fit_NASDAQ, "NASDAQ 100", alpha = 0.05)
 calcola_VaR(fit_DAX, "DAX", alpha = 0.05)
 calcola_VaR(fit_NIKKEI, "Nikkei 225", alpha = 0.05)
-
-
-
-
-## NB: re-estimate the GARCH(1,1) model on the S&P 500 index, reserving the last 10 observations for the forecast, and then generate the 1-step ahead forecasts with confidence bands:
-## CRUCIAL HAVING 10 windows
-library(gridExtra)
-
-# Funzione per forecast e visualizzazione
-forecast_plot <- function(data, name) {
-  # 1. Specifica GARCH(1,1)
-  spec <- ugarchspec(
-    variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
-    mean.model = list(armaOrder = c(0, 0), include.mean = TRUE),
-    distribution.model = "norm"
-  )
-  
-  # 2. Stima lasciando le ultime 10 osservazioni out-of-sample
-  fit <- ugarchfit(spec, data = data$log_return, out.sample = 10)
-  
-  # 3. Forecast rolling one-step-ahead per 10 giorni
-  forecast <- ugarchforecast(fit, n.ahead = 1, n.roll = 9)
-  mu <- fitted(forecast)
-  sigma <- sigma(forecast)
-  
-  # 4. Dati forecast
-  fc_dates <- tail(data$date, 10)
-  fc_df <- data.frame(
-    Date = fc_dates,
-    Forecast = as.numeric(mu),
-    Upper = as.numeric(mu + 2 * sigma),
-    Lower = as.numeric(mu - 2 * sigma),
-    Actual = tail(data$log_return, 10)
-  )
-  
-  # 5. Dati storici ultimi 3 mesi (~60 osservazioni)
-  hist_df <- tail(data, 60)
-  
-  # 6. Unisci forecast e storico per plot
-  ggplot() +
-    geom_line(data = hist_df, aes(x = date, y = log_return), color = "black") +
-    geom_line(data = fc_df, aes(x = Date, y = Forecast), color = "blue", linetype = "dashed") +
-    geom_ribbon(data = fc_df, aes(x = Date, ymin = Lower, ymax = Upper), fill = "red", alpha = 0.3) +
-    labs(title = paste(name, "- Forecast with 95% Confidence Interval"),
-         x = "Date", y = "Log Return") +
-    theme_minimal()
-}
-
-# Applica a ciascun indice
-p1 <- forecast_plot(SP500_df, "S&P 500")
-p2 <- forecast_plot(NASDAQ100_df, "NASDAQ 100")
-p3 <- forecast_plot(DAX_df, "DAX")
-p4 <- forecast_plot(NIKKEI_df, "Nikkei 225")
-
-# Subplot
-grid.arrange(p1, p2, p3, p4, ncol = 2)
-
-
-## CONCLUSIONS OF VaR
-library(rugarch)
-
-# Specifica GARCH(1,1)
-spec <- ugarchspec(
-  variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
-  mean.model = list(armaOrder = c(0, 0), include.mean = TRUE),
-  distribution.model = "norm"
-)
-
-# Funzione per creare forecast e dataframe
-genera_forecast_df <- function(serie, date, nome) {
-  fit <- ugarchfit(spec, data = serie, out.sample = 10)
-  forecast <- ugarchforecast(fit, n.ahead = 1, n.roll = 9)
-  mu <- fitted(forecast)
-  sigma <- sigma(forecast)
-  dates <- tail(date, 10)
-  actual <- tail(serie, 10)
-  
-  df <- data.frame(
-    Date = dates,
-    Forecast = as.numeric(mu),
-    Upper = as.numeric(mu + 2 * sigma),
-    Lower = as.numeric(mu - 2 * sigma),
-    Actual = actual
-  )
-  return(df)
-}
-
-# Genera i 4 dataframe
-df_forecast_SP500 <- genera_forecast_df(SP500_df$log_return, SP500_df$date, "S&P 500")
-df_forecast_NASDAQ <- genera_forecast_df(NASDAQ100_df$log_return, NASDAQ100_df$date, "NASDAQ 100")
-df_forecast_DAX <- genera_forecast_df(DAX_df$log_return, DAX_df$date, "DAX")
-df_forecast_NIKKEI <- genera_forecast_df(NIKKEI_df$log_return, NIKKEI_df$date, "Nikkei 225")
-
-# Ora puoi calcolare le metriche
-calcola_errori_forecast <- function(df_forecast, nome_indice) {
-  errori <- df_forecast$Actual - df_forecast$Forecast
-  mae <- mean(abs(errori))
-  mse <- mean(errori^2)
-  rmse <- sqrt(mse)
-  
-  return(data.frame(
-    Index = nome_indice,
-    MAE = round(mae, 6),
-    MSE = round(mse, 6),
-    RMSE = round(rmse, 6)
-  ))
-}
-
-# Calcolo finale
-risultati_errori <- rbind(
-  calcola_errori_forecast(df_forecast_SP500, "S&P 500"),
-  calcola_errori_forecast(df_forecast_NASDAQ, "NASDAQ 100"),
-  calcola_errori_forecast(df_forecast_DAX, "DAX"),
-  calcola_errori_forecast(df_forecast_NIKKEI, "Nikkei 225")
-)
-
-print(risultati_errori)
