@@ -72,8 +72,6 @@ Collected using `getSymbols()` from Yahoo Finance between April 2019 and April 2
 
 ## 📝 Author
 
-This project was developed as part of an academic and applied research initiative on financial econometrics and risk modeling. 
-
 All rights reserved to Giacomo Fantato.
 
 
