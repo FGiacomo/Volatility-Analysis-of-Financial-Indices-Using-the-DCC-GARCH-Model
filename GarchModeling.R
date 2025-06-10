@@ -1,19 +1,19 @@
-# Installa e carica i pacchetti
-#install.packages("quantmod")  # solo se necessario
+# Install and load required packages
+# install.packages("quantmod")  # only if necessary
 library(quantmod)
 
-# Imposta le date
+# Set the date range
 start_date <- as.Date("2019-04-30")
 end_date <- Sys.Date()
 
-# Definisci i simboli e nomi
+# Define ticker symbols and corresponding names
 symbols <- c("^GSPC", "^NDX", "^GDAXI", "^N225")
 names(symbols) <- c("SP500", "NASDAQ100", "DAX", "NIKKEI")
 
-# Scarica i dati
+# Download data from Yahoo Finance
 getSymbols(symbols, src = "yahoo", from = start_date, to = end_date)
 
-# Crea dataframes con apertura, chiusura e log-rendimenti
+# Create dataframes with open, close prices, and log returns
 
 SP500_df <- data.frame(
   date = index(GSPC),
@@ -43,37 +43,37 @@ NIKKEI_df <- data.frame(
   log_return = as.numeric(dailyReturn(Cl(N225), type = "log"))
 )
 
-# Visualizza anteprima
+# Preview data
 head(SP500_df)
 head(NASDAQ100_df)
 head(DAX_df)
 head(NIKKEI_df)
 
-
-# Controllo NA per ciascun dataframe
+# Check for NA values in each dataframe
 sapply(list(SP500 = SP500_df,
             NASDAQ100 = NASDAQ100_df,
             DAX = DAX_df,
             NIKKEI = NIKKEI_df), function(df) colSums(is.na(df)))
 
-# Rimozione righe con NA (per sicurezza)
+# Remove rows with NA values (just in case)
 SP500_df <- na.omit(SP500_df)
 NASDAQ100_df <- na.omit(NASDAQ100_df)
 DAX_df <- na.omit(DAX_df)
 NIKKEI_df <- na.omit(NIKKEI_df)
 
-# Grafico dei log-return (usando base R)
+# Plot log returns (using base R)
 par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
 plot(SP500_df$date, SP500_df$log_return, type = "l", main = "S&P 500 Log Returns", xlab = "Date", ylab = "Log Return")
 plot(NASDAQ100_df$date, NASDAQ100_df$log_return, type = "l", main = "NASDAQ 100 Log Returns", xlab = "Date", ylab = "Log Return")
 plot(DAX_df$date, DAX_df$log_return, type = "l", main = "DAX Log Returns", xlab = "Date", ylab = "Log Return")
 plot(NIKKEI_df$date, NIKKEI_df$log_return, type = "l", main = "Nikkei 225 Log Returns", xlab = "Date", ylab = "Log Return")
 
-# Statistiche descrittive
+# Descriptive statistics
 summary(SP500_df$log_return)
 summary(NASDAQ100_df$log_return)
 summary(DAX_df$log_return)
 summary(NIKKEI_df$log_return)
+
 
 ## summary statics
 library(moments)

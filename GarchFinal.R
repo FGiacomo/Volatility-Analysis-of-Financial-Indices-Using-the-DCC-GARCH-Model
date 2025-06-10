@@ -95,6 +95,17 @@ rownames(sigma_mat) <- index(train)
 port_sd <- rowSums((sigma_mat * w)^2)^0.5
 VaR_port <- qnorm(0.05) * port_sd
 
+# Standardized residuals Q-Q plot for each asset
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 2))
+for (i in 1:ncol(train)) {
+  fit <- ugarchfit(spec = garch_spec, data = train[, i], solver = "solnp")
+  std_resid <- residuals(fit, standardize = TRUE)
+  qqnorm(std_resid, main = paste("Q-Q Plot:", colnames(train)[i]),
+         ylab = "Sample Quantiles", xlab = "Theoretical Quantiles")
+  qqline(std_resid, col = "red")
+}
+
+
 # Compute actual portfolio returns
 port_ret <- rowSums(train * matrix(rep(w, each = nrow(train)), ncol = ncol(train)))
 
